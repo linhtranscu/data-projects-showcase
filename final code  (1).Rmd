@@ -1,0 +1,1365 @@
+---
+title: "Group Project Part 1"
+author: "Linh Tran"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+  html_document: default
+urlcolor: blue
+editor_options: 
+  chunk_output_type: console
+---
+The first part of the group project requires you to find a publicly available dataset that is relevant to your problem dataset and to define a marketing problem related to the data, along with additional questions that help to address the problem identified. You will first conduct exploratory data analysis on the provided data, then discuss the possible marketing issue/related questions of interest. You will also provide a secondary publicly available dataset that is likely to enhance your analysis along with a link to it.
+
+# Possible marketing problem definition related to your problem dataset and how secondary public dataset aids in providing more information
+
+1. Flight Satisfaction - How can we improve passenger satisfaction?
+
+**Focus:**  
+In the highly competitive airline sector, the satisfaction of customers is crucial for building brand loyalty and fostering repeat patronage. Factors such as service quality, operational reliability, in-flight experiences, and overall customer expectations are vital components that affect satisfaction. Commonly applied in service industries, the **SERVQUAL model** evaluates elements like tangibility, responsiveness, empathy, assurance, and reliability. Each of these factors contributes to the level of satisfaction that customers feel regarding the services provided. When airlines consistently perform well, especially in critical areas like responsiveness (handling issues) and reliability (timeliness), customer satisfaction generally tends to rise.
+
+**Application to Dataset:**
+
+- **Relevant Variables:** Satisfaction, Airline Status, Type of Travel, Class, Departure Delay, Arrival Delay, Flight Canceled.
+
+- **Analysis Plan:**  
+Analyze the Effects of Flight Class, Delays and Cancellations on Customer Satisfaction For instance, although economy class passengers may tolerate minor delays, they demand reliability in core processes like baggage handling. On the flipside, premium class passengers (mainly in business or first) are likely to have higher expectations for on-time operations and quicker fixes to service interruptions.
+
+- **Value of Analysis:**  
+Airlines can build better retention strategies by understanding what aspects are driving satisfaction. For example, if delays are to the degree that it reduces the level of satisfaction significantly then changes in operations could strengthen loyalty especially among repeating travelers.
+
+2. Pricing - How can we target right customers for increased revenue?
+
+**Focus:**  
+Airlines have complicated and flexible pricing policies which continuously change based on demand, booking date, and customer loyalty. Scroll down to read the recipes or The post The most -uncomplicated yet-Mind Bending Soup of your Life. Among the common belief that customers are sensitive of the price they are paying for the comfort and service has to align with the price, families even do not mind paying more if they think they are getting what they are paying for especially in higher classes where the standard is at a high level. With the ability to charge lower base fares and monetise extras, airlines are paying further attention to ancillary revenue, ranging from in-flight shopping to in-flight services.
+
+**Application to Dataset:**
+
+- **Relevant Variables:** Class, Shopping Amount at Airport, Eating and Drinking Amounts at Airport, Satisfaction.
+
+- **Analysis Plan:**  
+  We can investigate if premium customers get more value as a function of ticket class (e.g., do passengers that buy ancillaries report higher satisfaction?) or in comparison to ticket class (e.g. do premium customers report more value?) For example, we could examine business vs economy spending and satisfaction ratings to find out if more money correlates with more satisfaction.
+
+- **Value of Analysis:**
+  Satisfaction and spending behaviors insights can be utilized for pricing. If investment in in-flight products increases net promoter scores, the airline could consider unbundling and creating premium bundles that offer greater value at a low price point to travelers willing to pay for a first-class experience.
+
+3. Customer Segmentation - How are customers segmented based on different characteristics?
+
+**Focus:**  
+  From improving marketing effectiveness to streamlining services and optimizing customer experience, customer segmentation in the airline industry is very important. Some of the traditional segmentation methods are based on the travel purpose (business vs. leisure), travel frequency, and demographic factors like age, gender, etc. Segmentation allows airlines to target specific groups of customers, such as frequent business travelers who are less price sensitive and prefer reliability and attributes, which is not a characteristic of low-cost customers as much. Moreover, psychographic segmentation reveals valuable insights into customer values and lifestyles so to gain a deep insight on how to tailor your offerings according to your clientele, generate new revenue streams through add-in services.
+
+**Application to Dataset:**
+
+- **Relevant Variables:** Age, Gender, Airline Status, Type of Travel, No of Flights.
+
+- **Analysis Plan:**  
+  So from the dataset, we can group the customers based on demographics, travel reason, frequency etc (such as a high-status frequent flyer or a low-status traveler) and derive their value and satisfaction. We might explore, for instance, if business travelers care more about on-time performance whereas if that’s not such a big deal for leisure passengers and they are more concerned with comfort and price.
+
+- **Value of Analysis:**  
+  Such a segmentation strategy allows the airline to develop tailored strategies for each group such as prioritizing operational reliability for business customers and offering leisure travelers special fare discounts. Furthermore, personalized marketing through effective segmentation can increase loyalty and retention.
+
+# First, set your working directory using setwd() and read in the data
+
+First, setup the working directory and read in the problem data. The working directory is where the data input file and results output file are stored, together with this R mark down file. 
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(scales)
+library(ggplot2)
+library(reshape2)
+library(factoextra)
+library(stats)
+library(pheatmap)
+library(gridExtra)
+library(dendextend)
+library(grid)
+
+
+setwd("C:/Users/Linh/OneDrive - scu.edu/MKT ASSIGNMENT")
+datafile1 <- read_excel("Airline Satisfaction Data.xlsx")
+datafile2 <- read.csv("Airline Passenger Satisfaction.csv") # https://www.kaggle.com/datasets/teejmahal20/airline-passenger-satisfaction/data
+
+theme_preset <- theme(
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.background = element_blank(),
+  axis.line = element_line(color = "black"),
+  plot.title = element_text(hjust = 0.5, face = "bold")
+)
+```
+
+# Second, conduct exploratory data analysis
+Explore the data to understand basic patterns, overall type of the data, possible variables that could be useful in resolving the marketing problem identified. Discuss the variables in teh publicly available dataset and how that could aid in your analysis. You may use the following commands to get to know the data.
+
+```{r}
+names(datafile1)
+datafile1<-clean_names(datafile1)
+str(datafile1)
+summary(datafile1)
+datafile1[,c('satisfaction','airline_status','gender','type_of_travel','class','day_of_flight_date','month_of_flight_date','airline_name','flight_cancelled','origin_state','destination_state','scheduled_departure_hour')]<-lapply(datafile1[,c('satisfaction','airline_status','gender','type_of_travel','class','day_of_flight_date','month_of_flight_date','airline_name','flight_cancelled','origin_state','destination_state','scheduled_departure_hour')],as.factor)
+datafile1$flight_date <- as.Date(datafile1$flight_date, format = "%m/%d/%Y")
+datafile1$day_of_flight_date <- as.factor(format(datafile1$flight_date, "%d"))
+datafile1$satisfaction_score <- as.numeric(ifelse(datafile1$satisfaction=='Satisfied',1,0))
+summary(datafile1)
+
+```
+
+----- BASIC EDA -----
+```{r}
+
+# Check for missing values
+sum(is.na(datafile1))
+colSums(is.na(datafile1))
+
+# by age
+
+# Define a function to categorize age into life stages
+get_age_group <- function(age) {
+  if (age < 13) {
+    return("Child")
+  } else if (age >= 13 && age < 20) {
+    return("Teenager")
+  } else if (age >= 20 && age < 40) {
+    return("Young Adult")
+  } else if (age >= 40 && age < 65) {
+    return("Adult")
+  } else {
+    return("Senior")
+  }
+}
+
+head(datafile1)
+datafile1$age_group <- sapply(datafile1$age,get_age_group)
+#Summary of categorical variables
+col_category <- colnames(datafile1)[which(sapply(datafile1, is.factor) == TRUE)]
+col_category <- col_category[col_category != "customer_id"]
+col_category
+summary_category <- lapply(datafile1[, col_category], function(x) {
+    count_table <- sort(table(x), decreasing=TRUE)
+    prop_table <- sort(prop.table(count_table),decreasing=TRUE)
+    return(list(Counts = count_table, Proportions = prop_table))
+})
+summary_category
+
+#Summary of numeric variables
+col_numeric <- colnames(datafile1)[which(sapply(datafile1, is.numeric) == TRUE)]
+col_numeric <- col_numeric[col_numeric != "customer_id"]
+col_numeric
+summary_numeric <- lapply(datafile1[, col_numeric],summary)
+summary_numeric
+length(summary_numeric)
+par(mfrow=c(2,5), cex.main=0.8, cex.lab=0.7)
+col_name_numeric<-as.vector(names(datafile1)[col_numeric])
+boxplot_list <- lapply(col_numeric, function(col_name) {boxplot(datafile1[[col_name]], main=col_name, ylab="Values")}) + theme_preset
+hist_list <- lapply(col_numeric, function(col_name) {hist(datafile1[[col_name]], main = paste("Histogram of" , col_name), ylab="Values")}) + theme_preset
+corr_matrix <- cor(datafile1[which(sapply(datafile1, is.numeric) == TRUE)],use='complete.obs')
+corr_matrix <- melt(corr_matrix)
+
+ggplot(corr_matrix, aes(x=reorder(Var1,value ),y=reorder(Var2,value),fill=value)) + geom_tile() +  scale_fill_gradient2(low = 'red', mid = 'white', high = 'blue', midpoint = 0,limits = c(-1, 1))  +theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_preset
+
+# Finding outliers
+norm_age <- scale(datafile1$age)
+age_outliers <- datafile1$age[abs(norm_age) > 3]
+length(age_outliers)
+norm_eat <- scale(datafile1$eating_and_drinking_amounts_at_airport)
+eat_outliers <- datafile1$eating_and_drinking_amounts_at_airport[abs(norm_eat) > 3]
+length(eat_outliers)
+norm_shopping <- scale(datafile1$shopping_amount_at_airport)
+shopping_outliers <- datafile1$shopping_amount_at_airport[abs(norm_shopping) > 3]
+length(shopping_outliers)
+norm_loyalty <- scale(datafile1$no_of_flights)
+loyalty_outliers <- datafile1$no_of_flights[abs(norm_loyalty) > 3]
+length(loyalty_outliers)
+norm_arrival_delay <- scale(datafile1$arrival_delay)
+arrival_delay_outliers <- datafile1$arrival_delay[abs(norm_arrival_delay) > 3]
+length(arrival_delay_outliers)
+norm_departure_delay <- scale(datafile1$departure_delay)
+departure_delay_outliers <- datafile1$departure_delay[abs(norm_departure_delay) > 3]
+length(departure_delay_outliers)
+norm_flight_time <- scale(datafile1$flight_time)
+flight_time_outliers <- datafile1$flight_time[abs(norm_flight_time) > 3]
+length(flight_time_outliers)
+norm_flight_distance <- scale(datafile1$flight_distance)
+flight_distance_outliers <- datafile1$flight_distance[abs(norm_flight_distance) > 3]
+length(flight_distance_outliers)
+
+#Chi-square test
+
+# Chi-square test function
+chisq_pair <- function(df) {
+  for (i in 1:ncol(df)) {
+    for (n in 1:(ncol(df)-i)) {
+      if (i + n <=ncol(df) ) {  
+        test_result = chisq.test(table(df[, c(i, i + n)]))
+        if (test_result$p.value <= 0.05 & names(df)[i]!=names(df)[i+n]) {
+          cat("Chi-squared test result for variables:", names(df)[i], "and", names(df)[i + n], "\n")
+          print(test_result,n=20)}}}}}
+chisq_pair(datafile1[col_category])
+
+#### Advance EDA
+datafile1 %>%select(airline_name, flight_cancelled) %>%group_by(airline_name, flight_cancelled) %>%summarise(count = n()) %>%mutate(prop = count / sum(count)) %>%     ungroup()
+
+### Route Analysis
+routes<- as.data.frame(datafile1 %>% select(origin_state,destination_state,satisfaction_score,flight_distance,airline_name) %>% group_by(origin_state,destination_state) %>% summarise(count=n(),.groups='drop',avg_satisfaction=mean(satisfaction_score),avg_dist=mean(flight_distance)) %>% arrange(-count))
+top_20_routes <- routes[c(1:20),]
+print(top_20_routes)
+ggplot(routes, aes(x=origin_state,y=destination_state,fill=avg_satisfaction)) + geom_tile() +   scale_fill_gradient(low = "lightyellow", high = "red") +theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_preset
+
+ggplot(routes, aes(x=avg_dist,y=avg_satisfaction,size=count,color=count))+  scale_size(range = c(0.1, 12), name = "Count")+ scale_color_gradient(low = "orange", high = "red", name = "Count") +  scale_size_continuous(name = "Count", breaks = seq(0, max(routes$count), by = 100), labels = scales::comma)  + geom_point(alpha=.8,show.legend = c(size = FALSE)) + theme_preset 
+
+best_routes <- arrange(routes,-avg_satisfaction)
+best_routes[c(1:10),]
+
+worst_routes <- arrange(routes,avg_satisfaction)
+worst_routes[c(1:10),]
+
+# Date time of flights
+ggplot(datafile1, aes(x = scheduled_departure_hour)) +geom_bar() +geom_line(data = datafile1 %>%group_by(scheduled_departure_hour) %>%summarise(count = n()), aes(x = scheduled_departure_hour, y = count),color = "blue") +labs(x = "Scheduled Departure Hour", y = "Frequency", title = "Scheduled Departure Hours with Line and Bar Chart") + theme_preset
+
+### Loyalty
+datafile1 %>% select(no_of_flights,airline_status) %>% group_by(airline_status) %>% summarise(med=median(no_of_flights),avg=mean(no_of_flights))
+ggplot(datafile1, aes(x=no_of_flights,fill=airline_name)) +geom_histogram()
+ggplot(datafile1,aes(x=airline_status)) + geom_bar()
+
+#### Satisfaction analysis
+ggplot(datafile1,aes(x=airline_status,fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x=gender,fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x=age_group,fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x=type_of_travel,fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x=class,fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x = reorder(month_of_flight_date, match(month_of_flight_date, month.name)),fill=satisfaction)) + geom_bar(position='fill') + theme_preset
+ggplot(datafile1,aes(x =(origin_state),fill=satisfaction)) + geom_bar(position='fill') + theme_preset + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(datafile1,aes(x =destination_state,fill=satisfaction)) + geom_bar(position='fill') + theme_preset + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(datafile1,aes(x =flight_cancelled,fill=satisfaction)) + geom_bar(position='fill') + theme_preset + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+delay_time_impact <- datafile1 %>%group_by(scheduled_departure_hour) %>% summarise(avg_arrival_delay = mean(arrival_delay, na.rm = TRUE),avg_departure_delay = mean(departure_delay, na.rm = TRUE), satisfaction_rate = mean(satisfaction_score, na.rm = TRUE),.groups = "drop")
+ggplot(delay_time_impact, aes(x = scheduled_departure_hour)) +geom_bar(aes(y = avg_arrival_delay, fill = "Arrival Delay"), stat = "identity", position = "dodge") + geom_bar(aes(y = avg_departure_delay, fill = "Departure Delay"), stat = "identity", position = "dodge") +scale_fill_manual(values = c("Arrival Delay" = "blue", "Departure Delay" = "red")) +labs(title = "Average Delay Impact by Time of Day", x = "Time of Day", y = "Average Delay (minutes)") + theme_preset
+
+### Spending analysis
+datafile1$total_spending=datafile1$eating_and_drinking_amounts_at_airport+datafile1$shopping_amount_at_airport
+spending_by_gender <- data.frame(datafile1 %>% select(gender,eating_and_drinking_amounts_at_airport,shopping_amount_at_airport) %>% group_by(gender) %>% summarise(food_and_drink=sum(eating_and_drinking_amounts_at_airport),shopping=sum(shopping_amount_at_airport)))
+spending_by_gender
+spending_by_gender <- pivot_longer(spending_by_gender, cols = c(food_and_drink, shopping), names_to = "category", values_to = "value")
+spending_by_age_group <- data.frame(datafile1 %>% select(age_group,eating_and_drinking_amounts_at_airport,shopping_amount_at_airport) %>% group_by(age_group) %>% summarise(food_and_drink=sum(eating_and_drinking_amounts_at_airport),shopping=sum(shopping_amount_at_airport)))
+spending_by_age_group
+spending_by_age_group <- pivot_longer(spending_by_age_group, cols = c(food_and_drink, shopping), names_to = "category", values_to = "value")
+spending_by_gender
+ggplot(spending_by_gender,aes(x=category, y=value,fill=gender)) + geom_col(position = "dodge")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.line = element_line(color = "black"),plot.title = element_text(hjust = 0.5, face = "bold")) + labs(title='Revenue by Gender and Service',y='Total revenue',x='Service')+
+  scale_x_discrete(labels = c("food_and_drink" = "Food & Drink", "shopping" = "Shopping"))+   scale_y_continuous(labels = comma)
+ggplot(spending_by_age_group,aes(x=category, y=value,fill=age_group)) + geom_col(position = "dodge")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.line = element_line(color = "black"),plot.title = element_text(hjust = 0.5, face = "bold")) + labs(title='Revenue by Age and Service',y='Total revenue',x='Service')+
+  scale_x_discrete(labels = c("food_and_drink" = "Food & Drink", "shopping" = "Shopping"))+   scale_y_continuous(labels = comma)
+
+spending_by_travel_type <- data.frame(datafile1 %>% select(type_of_travel,eating_and_drinking_amounts_at_airport,shopping_amount_at_airport) %>% group_by(type_of_travel) %>% summarise(food_and_drink=sum(eating_and_drinking_amounts_at_airport),shopping=sum(shopping_amount_at_airport)))
+spending_by_travel_type
+spending_by_travel_type <- pivot_longer(spending_by_travel_type, 
+                                        cols = c(food_and_drink, shopping), 
+                                        names_to = "category", 
+                                        values_to = "value")
+ggplot(spending_by_travel_type,aes(x=category, y=value,fill=type_of_travel)) + geom_col(position = "dodge")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.line = element_line(color = "black"),plot.title = element_text(hjust = 0.5, face = "bold")) + labs(title='Revenue by Type of Travel and Service',y='Total revenue',x='Service')+
+  scale_x_discrete(labels = c("food_and_drink" = "Food & Drink", "shopping" = "Shopping"))+   scale_y_continuous(labels = comma)
+
+```
+#Summary of what you learned from EDA
+After exploring the data, write an overall summary of your learning from the initial EDA.E.g. how many records are there, what is the mean number of orders, are there any outliers, missing values, patterns in relationships etc. In what way doe the public dataset likely to add to the value of information from the data.
+ Overview of dataset properties:
+
+- Total observations:10600
+
+- Original variables: 21
+
+- Missing values: 14047
+  - Missing from day of flight date: 6416
+  - Missing from flight time: 418
+  - Missing from arrival delay: 418
+  - Missing from departure delay: 379
+
+ Satisfaction 
+
+- Satisfied: 5430 or 51.23%
+
+- Not Satisfied: 5170 or 48.77%
+
+ Airline Status
+
+- Blue: 7198 or 67.91%
+
+- Silver: 2120 or 20.00%
+
+- Gold: 936 or 8.83%
+
+- Platinum: 346 or 3.26%
+
+ Gender
+
+- Female: 5915 or 55.80%
+
+- Male: 4685 or 44.20%
+
+ Type of Travel
+
+- Business travel: 6575 or 62.03%
+
+- Personal travel: 3233 or 30.50%
+
+- Mileage tickets: 792 or 7.47%
+
+ Class
+
+- Eco: 8574 or 80.89%
+
+- Eco Plus: 1065 or 10.05%
+
+- Business: 961 or 9.07%
+
+ Day of Flight
+
+- 01: 1224 or 29.25%
+
+- 02: 1256 or 30.02%
+
+- 03: 620 or 14.82%
+
+- 04: 9 or 0.22%
+
+- 05: 18 or 0.43%
+
+- 06: 66 or 1.58%
+
+- 07: 19 or 0.45%
+
+- 08: 43 or 1.03%
+
+- 09: 22 or 0.53%
+
+- 10: 42 or 1.00%
+
+- 11: 586 or 14.01%
+
+- 12: 279 or 6.67%
+
+- Number of month days without any entries: 19 days (from 13rd to 31st)
+
+ Month of Flight
+
+- January: 3317 or 31.29%
+
+- February: 3053 or 28.80%
+
+- March: 1562 or 14.74%
+
+- April: 17 or 0.16%
+
+- May: 53 or 0.50%
+
+- June: 141 or 1.33%
+
+- July: 59 or 0.56%
+
+- August: 108 or 1.02%
+
+- September: 53 or 0.50%
+
+- October: 78 or 0.74%
+
+- November: 1542 or 14.55%
+
+- December: 617 or 5.82%
+
+ Airline
+
+- Primera Air: 8927 or 84.22%
+
+- Wow Air: 1673 or 15.78%
+
+ Flight Cancelled
+
+- No: 10207 or 96.29%
+
+- Yes: 393 or 3.71%
+ or Cancellation Rate
+
+- Primera Air: 3.57%
+
+- Wow Air: 4.42%
+
+ Origin State (top 10 most popular origins)
+
+- Texas: 2873 or 27.10%
+
+- Illinois: 1609 or 15.18%
+
+- Virginia: 1067 or 10.07%
+
+- Florida: 749 or 7.07%
+
+- New York: 625 or 5.90%
+
+- North Carolina: 321 or 3.03%
+
+- Wisconsin: 314 or 2.96%
+
+- Ohio: 279 or 2.63%
+
+- Tennessee: 249 or 2.35%
+
+- Arkansas: 231 or 2.18%
+
+ Origin State (top 10 least popular origins)
+
+- Nebraska: 34 or 0.32%
+
+- Connecticut: 33 or 0.31%
+
+- North Dakota: 27 or 0.25%
+
+- Utah: 27 or 0.25%
+
+- West Virginia: 20 or 0.19%
+
+- Maine: 10 or 0.09%
+
+- Vermont: 10 or 0.09%
+
+- Rhode Island: 9 or 0.08%
+
+- Massachusetts: 5 or 0.05%
+
+- Arizona: 1 or 0.01%
+
+ Destination State (top 10 most popular destinations)
+
+- Texas: 2902 or 27.38%
+
+- Illinois: 1742 or 16.43%
+
+- New York: 769 or 7.25%
+
+- Florida: 744 or 7.02%
+
+- Ohio: 377 or 3.56%
+
+- Georgia: 347 or 3.27%
+
+- North Carolina: 328 or 3.09%
+
+- Virginia: 299 or 2.82%
+
+- Tennessee: 298 or 2.81%
+
+- Michigan: 244 or 2.30%
+
+ Destination State (top 10 least popular destinations)
+
+- Nebraska: 52 or 0.49%
+
+- New Mexico: 51 or 0.48%
+
+- South Dakota: 49 or 0.46%
+
+- North Dakota: 35 or 0.33%
+
+- Vermont: 31 or 0.29%
+
+- Maryland: 28 or 0.26%
+
+- Utah: 20 or 0.19%
+
+- New Jersey: 15 or 0.14%
+
+- Connecticut: 10 or 0.09%
+
+- Arizona: 1 or 0.01%
+
+ Age Group
+
+- Adult: 4791 or 45.20%
+
+- Young Adult: 3391 or 31.99%
+
+- Senior: 1778 or 16.77%
+
+- Teenager: 640 or 6.04%
+ 
+ Scheduled Departure Hour
+
+- 05: 99 or 0.93%
+
+- 06: 820 or 7.74%
+
+- 07: 652 or 6.15%
+
+- 08: 701 or 6.61%
+
+- 09: 618 or 5.83%
+
+- 10: 679 or 6.41%
+
+- 11: 668 or 6.30%
+
+- 12: 815 or 7.69%
+
+- 13: 617 or 5.82%
+
+- 14: 804 or 7.58%
+
+- 15: 607 or 5.73%
+
+- 16: 753 or 7.10%
+
+- 17: 834 or 7.87%
+
+- 18: 614 or 5.79%
+
+- 19: 563 or 5.31%
+
+- 20: 390 or 3.68%
+
+- 21: 326 or 3.08%
+
+- 22: 40 or 0.38%
+
+- Hour without scheduled departures: 23,0,1,2,3,4
+
+ Routes:
+
+- Number of routes: 213
+
+- Popular routes:
+  - Texas-Texas: 1509
+  - Florida-Florida: 350
+  - Illinois-Illinois: 202
+  - Illinois-Ohio: 178
+  - Virginia-New York: 173
+
+- Least opular routes:
+  - Arizona-California: 1
+  - California-Arizona: 1
+  - Virginia-Louisiana: 2
+  - New York-Indiana: 2
+  - Utah-Texas: 3
+
+ Age:
+
+- Range: 15–85 years
+
+- Minimum: 15
+
+- Maximum: 85
+
+- Mean: 46.34
+
+ Shopping Amount at Airport:
+
+- Range: $0–$580
+
+- Minimum: $0
+
+- Maximum: $580
+
+- Mean: $26.68 (implying a low average spend, with many not shopping at all)
+
+ Eating and Drinking Amounts at Airport:
+
+- Range: $0–$895
+
+- Minimum: $0
+
+- Maximum: $895
+
+- Mean: $68.8 (higher spend compared to shopping)
+
+ Number of Flights:
+
+- Range: 0–98 flights
+
+- Minimum: 0
+
+- Maximum: 98
+
+- Mean: 19.96 (indicating regular travelers in the sample)
+
+ Flight Time:
+
+- Range: 16–223 minutes
+
+- Minimum: 16
+
+- Maximum: 223
+
+- Mean: 73.49
+
+ Arrival Delay:
+
+- Range: 0–1011 minutes
+
+- Minimum: 0
+
+- Maximum: 1011
+
+- Mean: 19.09 (majority of flights arrive on time or with minimal delay)
+
+ Departure Delay:
+
+- Range: 0–1017 minutes
+
+- Minimum: 0
+
+- Maximum: 1017
+
+- Mean: 16.35
+
+ Flight Distance:
+
+- Range: 67–1379 miles
+
+- Minimum: 67
+
+- Maximum: 1379
+
+- Mean: 468.9 (indicating medium- to long-distance flights)
+
+ Satisfaction Score:
+
+- Range: 0–1
+
+- Minimum: 0.0000
+
+- Maximum: 1.0000
+
+- Mean: 0.5123 (suggesting a fair level of satisfaction among passengers)
+
+ Chi-squared test of dependence (at 5% significance, notable associations):
+
+- Satisfaction and Airline Status
+
+- Satisfaction and Gender
+
+- Satisfaction and Type of Travel
+
+- Satisfaction and Class of Service
+
+- Satisfaction and Month of Flight
+
+- Satisfaction and Flight Cancelled
+
+- Satisfaction and Origin States
+
+- Satisfaction and Destination States
+
+- Satisfaction and Scheduled Departure Hour
+
+ Variables with outliers: 
+
+-	Eating and drinking amount: 143
+
+-	Shopping amount: 241
+
+-	Number of flights: 77
+
+-	Arrival delay: 615
+
+-	Departure delay: 567
+
+-	Flight time: 479
+
+-	Distance: 57
+
+
+** Summary of main dataset:** 
+There are a total of 10,600 record entries in the dataset. Regarding the missing values, out of 393 flight cancellations, there are 379 observations when flights were cancelled leading to flight date, day of flight date, arrival delay, and departure delay having null values, the other 14 flights were delayed before they were cancelled based on the presence of departure delay data. Some of the counts of variables could be inconsistent due to missing values. Overall, passengers are slightly more likely to be satisfied by flight services than dissatisfied (51.23% satisfaction rate in general). Primera Air had more record entries for each customer in the dataset with over 84.22% of observations compared to 15.78% from Wow Air. Between the two airlines, there is a negligible difference between flight cancellation rate with Primera Air at 3.57% while Wow Air had a 4.42% cancellation rate. Regarding airline status, most loyal customers are Blue, followed by Gold, Platinum and lastly Silver based on median and average of number of previous flights, which seems to be contradictory to common practice (Platinum is the highest tier for loyalty, followed by Gold, Silver and Blue). An average customer had flown with the airline 20 times, while Primera Air enjoyed more customer loyalty when compared to Wow Air. A majority of flight passengers flew for business purpose with over 62%, followed by personal purpose and mileage tickets with 30.5% and 7.47% respectively. In contrast, only 9.07% of tickets sold were Business Class while Eco was the most popular class with over 80%. There are only 12 days of the month when flights were recorded (from the 1st to 12th), which raised a question in how data collection works in the two companies. In the days that flights were recorded, passengers were more likely to take flights on the first three days of the month with over 75% of total flights happening on these days and another 20.68% for the 11th and 12th while business was slow from the 4th to 10th monthly with less than 2% of total flights for each day. Most flights are taken in January, February, March, November and December, which contradicts so common expectation of increased travel in summer months. Flights were scheduled during the day from 6AM to 9PM, very few trips were scheduled after 10PM till 5AM the next day while no flight was set for departure at 11PM to 4AM, suggesting that the two airlines did not have 24/7 service. Geographically, the operations of the two companies concentrated in Texas, Illinois, Virginia (Texas was top market for Primera Air while Virginia was Wow Air’s largest market). Texas and Illinois were also the prime destinations while very few flights were taken to New Jersey, Connecticut and only 1 customer flew to Arizona who travelled for business purpose with an Eco ticket with Primera Air. There were 213 unique routes, top three flights were in-state flights for Texas and Florida, and Illinois while people seemed to prefer driving from Arizona to California or the opposite way when travelling between the two states (only 1 flight recorded each way). Demographically speaking, there are more female passengers with 55.8%. Adults accounted for the largest customer segment, followed by young adults, while seniors only made up almost 17% of flights and teenagers were the smallest clientele. With regards to spending, an average customer would spend 26.68 dollars for shopping and 68.8 dollars for drinking. A maximum shopping bill was recorded at $580 from a businesswoman departing from Alabama, with a Blue tier – highest loyalty level. A record high amount spent on food was $895 by a businessman from Illinois, a high possibility that the amount was spent on treating business partners. The average amount may be misleading when looking at the boxplots of spending, which showed Business Class passengers spending more than other classes. The shortest flight was 67 miles between Wisconsin and Chicago, which could be due to inconvenient traffic condition or it being a mountainous route. The longest wait time for arrival was 1011 minutes on a flight from Minnesota to New York by Primera, and coincidentally this route also took a record 1017 minutes after schedule to depart on 1/1/2019.
+From the heatmap of correlations, we observed little to no pattern regarding satisfaction score's association with other variables. Apart from that, there were slight negative correlations between satifaction and number of previous flights, and age (which means that the higher the age the less likely a person would be satisfied)
+
+----- EDA of secondary dataset ----
+```{r}
+
+# Count missing values in each column
+colSums(is.na(datafile2))
+colnames(datafile2)
+datafile2 <-clean_names(datafile2)
+colnames(datafile2)
+
+#remove irrelevant columns
+datafile2 <-datafile2 %>% select(-x)
+datafile2[,c('gender','class','customer_type','type_of_travel','satisfaction')]=lapply(datafile2[,c('gender','class','customer_type','type_of_travel','satisfaction')],as.factor)
+
+#Summary of numerical/integer variables
+col_numeric2 <- colnames(datafile2)[which(sapply(datafile2, is.integer))]
+col_numeric2 <- col_numeric2[col_numeric2 != "customer_id"]
+col_numeric2
+summary_numeric2 <- lapply(datafile2[, col_numeric2], summary)
+summary_numeric2
+length(summary_numeric2)
+par(mfrow = c(3, 6), cex.main = 0.8, cex.lab = 0.7)
+col_name_numeric2 <- as.vector(col_numeric2)
+boxplot_list2 <- lapply(col_numeric2, function(col_name) {
+    boxplot(datafile2[[col_name]], main = col_name, ylab = "Values")
+}) + theme_preset
+hist_list2 <- lapply(col_numeric2, function(col_name) {
+    hist(datafile2[[col_name]], main = paste("Histogram of", col_name), ylab = "Values")
+}) + theme_preset
+
+#Summary of categorical variables
+col_category2 <- colnames(datafile2)[which(sapply(datafile2, is.factor))]
+col_category2 <- col_category2[col_category2 != "customer_id"]
+col_category2
+summary_category2 <- lapply(datafile2[, col_category2], function(x) {
+    count_table <- sort(table(x), decreasing = TRUE)
+    prop_table <- sort(prop.table(count_table), decreasing = TRUE)
+    return(list(Counts = count_table, Proportions = prop_table))
+})
+
+
+corr_matrix2 <- cor(datafile2[which(sapply(datafile2, is.integer))], use = "complete.obs")
+corr_matrix2 <- melt(corr_matrix2)
+
+ggplot(corr_matrix2, aes(x=reorder(Var1,value ),y=reorder(Var2,value),fill=value)) + geom_tile() +  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_preset
+
+#Customer Satisfaction Analysis
+  ggplot(datafile2, aes(x = satisfaction)) +
+  geom_bar(fill = "blue") +
+  labs(title = "Distribution of Satisfaction Levels")
+  
+ggplot(datafile2, aes(x = age)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
+  labs(title = "Age Distribution of Customers")
+ 
+ggplot(datafile2, aes(x = type_of_travel, fill = satisfaction)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(title = "Customer Satisfaction by Type of Travel", y = "Proportion")
+  
+ ggplot(datafile2, aes(x = class, fill = satisfaction)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("blue", "red")) +
+  labs(title = "Customer Satisfaction by Flight Class", y = "Proportion")
+```
+
+** Summary of secondary dataset **
+Age
+
+- Range: 7–85
+
+- Minimum: 7
+
+- Maximum: 85
+
+- Mean: 39.43
+
+Flight Distance
+
+- Range: 31–4983 miles
+
+- Minimum: 31
+
+- Maximum: 4983
+
+- Mean: 1190
+
+Inflight WiFi Service
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 2.73
+
+Departure/Arrival Time Convenient
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.06
+
+Ease of Online Booking
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 2.76
+
+Gate Location
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 2.98
+
+Food and Drink
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.21
+
+Online Boarding
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.25
+
+Seat Comfort
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.44
+
+Inflight Entertainment
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.36
+
+Onboard Service
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.38
+
+Leg Room Service
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.35
+
+Baggage Handling
+
+- Range: 1–5
+
+- Minimum: 1
+
+- Maximum: 5
+
+- Mean: 3.63
+
+Check-in Service
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.31
+
+Inflight Service
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.64
+
+Cleanliness
+
+- Range: 0–5
+
+- Minimum: 0
+
+- Maximum: 5
+
+- Mean: 3.29
+
+Departure Delay in Minutes
+
+- Range: 0–1592
+
+- Minimum: 0
+
+- Maximum: 1592
+
+- Mean: 14.71
+
+Arrival Delay in Minutes
+
+- Range: 0–1584
+
+- Minimum: 0
+
+- Maximum: 1584
+
+- Mean: 15.09
+
+- NA's: 393
+
+Gender
+
+- Female: 65,899 or 50.74%
+
+- Male: 63,981 or 49.26%
+
+Customer Type
+
+- Loyal Customer: 106,100 or 81.69%
+
+- Disloyal Customer: 23,780 or 18.31%
+
+Type of Travel
+
+- Business Travel: 89,693 or 69.06%
+
+- Personal Travel: 40,187 or 30.94%
+
+Class
+
+- Business: 62,160 or 47.86%
+
+- Eco: 58,309 or 44.89%
+
+- Eco Plus: 9,411 or 7.25%
+
+Satisfaction
+
+- Neutral or Dissatisfied: 73,452 or 56.55%
+
+- Satisfied: 56,428 or 43.45%
+
+** Summary of findings **
+The dataset is available at: https://www.kaggle.com/datasets/teejmahal20/airline-passenger-satisfaction/data
+This dataset gives us a close look at 129,880 airline passenger records, plus some extra details from a second dataset that dives deeper into who these passengers are and how they feel about their flights. First off, satisfaction is split—about 56.55% of passengers are “neutral or dissatisfied,” while 43.45% left their flights feeling satisfied. This suggests that there’s a mix of experiences, likely influenced by things like travel class, service quality, and how convenient the journey was.Passengers range in age from 7 to 85, with an average age of about 39. It’s pretty evenly split between women (50.74%) and men (49.26%). Most passengers—81.69%—are loyal customers, showing a strong base of regular flyers. When it comes to why they’re flying, around 69% are on business, while 31% are traveling for personal reasons.Looking at travel classes, nearly half (47.86%) of all tickets sold are for Business Class, followed closely by Economy at 44.89%, with a smaller group (7.25%) in Eco Plus. This breakdown hints at a preference for more comfortable seating, possibly due to the high number of business travelers.Passengers also rated different parts of the in-flight experience on a scale from 0 to 5. Seat comfort and inflight entertainment scored around 3.4, and onboard service got a similar rating at 3.38. These numbers show that people find these services acceptable but not exceptional. Food and drink services are rated at 3.21, and legroom isn’t far behind at 3.35, so there may be some room for improvement here to make flights more enjoyable. Inflight wifi service scored 2.73 on average, which suggests that internet access might not be meeting expectations.We did find that just slightly lower (around the convenience of gate location and ease of online booking), scoring 2.98 and 2.76 on average. In other words, parts of the airport experience or the booking process really annoy passengers, & in turn, could directly affect their happiness. Check-in and baggage handling were only marginally better with averages of 3.31 and 3.63, respectively, indicating a pretty high level of satisfaction on these aspects of the service.
+Another consideration is that of flight delays, which average about 15 minutes for both departures and arrivals. We have 393 records where we have no arrival delay info, possible because the flight has been cancelled or they are very bad at timekeeping! This may have an impact on the average delays, as assessed by her, however, it does not change the overall picture massively.
+
+** Potential use **
+
+-Consumer Groups: The age groupings and the distribution of genders tell us which customers the airline caters to most. Analysing this data will allow the airline to learn which are the most frequent passengers and adapt their marketing campaigns and service enhancements accordingly.
+
+-Customer Satisfaction Trends: Looking at satisfaction rates by aircraft class and type of travel can provide information about the satisfaction levels of different types of consumers. If business class passengers are much more satisfied than economy passengers, then a service improvement in economy might increase satisfaction as well.In the same way, a satisfaction difference between business and leisure passengers suggests that each segment has unique needs that can be addressed through customized service.
+
+-Efficiency and Delays in Service: Monitoring delays can offer crucial operational information that are important to retain customers. Huge lags might suggest that operations are needed to be tweaked or better communicated with customers. The demographic breakdown of delays (by gender, etc) could also identify the cause of service perception problems that could allow the airline to improve customer service efforts and decrease dissatisfaction due to delays.
+**Question 3: Identification of problem and discussion of EDA** 
+From studying the datasets through EDA above, we decided to study customer spending behaviours, how satisfaction is affected by different factors and finally how to segment customers in order to devise customized marketing campaign for each customer group. In achieving so, we plan to use main dataset to study spending habit, then segment passengers based on their consumer behaviour and demographics. The secondary dataset would be utilized for the study of factors that affect satisfaction in flyers and would play a good complimentary role since it contained more detailed record entries of how passenger satisfaction is broken down based on different airline qualities.
+```{r}
+par(mfrow = c(1, 1))
+datafile1 <- datafile1[datafile1$total_spending!=0, ]
+hist(datafile1$total_spending, main='Histogram of total spending per passenger',cex.main = 1.5)
+datafile1$log_spending<- log(datafile1$total_spending)
+data_scaled <- scale(datafile1[,c('satisfaction_score','log_spending','no_of_flights','age')])
+
+#PCA to identify the most relevant feature combination
+pca_result <- prcomp(data_scaled, center = TRUE, scale. = TRUE)
+explained_variance <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+cumulative_variance <- cumsum(explained_variance)
+plot(cumulative_variance, type = "b", xlab = "Principal Component", ylab = "Cumulative Variance Explained", main = "Cumulative Variance")
+top_pcs <- pca_result$x[, 1:2]
+component_df <- as.data.frame(t(pca_result$rotation[, 1:2]))
+rownames(component_df) <- c("PCA1", "PCA2")                  
+colnames(component_df) <- colnames(data_scaled)  
+pheatmap(component_df)
+grid.text("Contribution of variables to PCA Eigenvectors", x = 0.5, y = 0.98, gp = gpar(fontsize = 16, fontface = "bold"))
+
+#calculate distance
+distance=dist(top_pcs)
+data_scaled_hclust <- hclust(distance)
+plot(data_scaled_hclust, hang=-1, labels=datafile1$customer_id)
+dend <- as.dendrogram(data_scaled_hclust)
+plot(dend, main='Hierarchical Clustering on Second Dataset')
+fviz_nbclust(top_pcs, FUN=hcut, method = "wss")
+fviz_nbclust(top_pcs, FUN=hcut, method = "silhouette")
+labels(dend) <- datafile1$customer_id
+dend <- color_labels(dend,k=3)
+dend <- color_branches(dend,k=3)
+plot(dend,main='Hierarchical Clustering on Second Dataset',cex.main=1.5)
+
+#K-means
+set.seed(123)
+data_scaled_k<- kmeans(top_pcs,3,nstart=20)
+datafile1$cluster<-data_scaled_k$cluster
+customer_cluster <-datafile1 %>% group_by(cluster)%>% reframe(count=n(),customer_id)
+customer_cluster
+fviz_cluster(data_scaled_k,top_pcs)
+datafile1$cluster <- as.factor(datafile1$cluster)
+table(datafile1$cluster)
+ggplot(datafile1, aes(x = factor(cluster))) +geom_bar() +labs(title = "Cluster Sizes", x = "Cluster", y = "Count")
+
+wss<- data_scaled_k$tot.withinss
+tss <- data_scaled_k$totss
+r_squared<- 1-(wss/tss)
+r_squared
+
+data_centers <-as.data.frame(data_scaled_k$centers)
+TukeyHSD(aov((total_spending) ~ cluster, data = datafile1))
+TukeyHSD(aov((eating_and_drinking_amounts_at_airport) ~ cluster, data = datafile1))
+TukeyHSD(aov((shopping_amount_at_airport) ~ cluster, data = datafile1))
+TukeyHSD(aov(satisfaction_score ~ cluster, data = datafile1))
+TukeyHSD(aov(flight_distance ~ cluster, data = datafile1))
+TukeyHSD(aov(no_of_flights ~ cluster, data = datafile1))
+TukeyHSD(aov(departure_delay ~ cluster, data = datafile1))
+TukeyHSD(aov(arrival_delay ~ cluster, data = datafile1))
+TukeyHSD(aov(age ~ cluster, data = datafile1))
+
+chisq.test(table(datafile1$age_group, datafile1$cluster))
+chisq.test(table(datafile1$flight_cancelled, datafile1$cluster))
+chisq.test(table(datafile1$class, datafile1$cluster))
+chisq.test(table(datafile1$type_of_travel, datafile1$cluster))
+chisq.test(table(datafile1$gender, datafile1$cluster))
+chisq.test(table(datafile1$satisfaction, datafile1$cluster))
+chisq.test(table(datafile1$origin_state, datafile1$cluster))
+chisq.test(table(datafile1$destination_state, datafile1$cluster))
+chisq.test(table(datafile1$month_of_flight_date , datafile1$cluster))
+chisq.test(table(datafile1$day_of_flight_date , datafile1$cluster))
+
+
+
+#Inspect clusters
+get_prop_clusters <- function(var,data) {
+  results<-list()
+  for (i in sort.default(as.numeric(unique(data$cluster)))) {
+    cluster_prop <- data[data$cluster==i,var,drop=TRUE]
+    results[[paste("cluster_", i)]] <- prop.table(table(cluster_prop))
+  }
+  return(results)
+}
+summary_clusters <- function(var,data) {
+  results<-list()
+  for (i in sort.default(as.numeric(unique(data$cluster)))) {
+    summaries <- data[data$cluster==i,var,drop=TRUE]
+    results[[paste("cluster_", i)]] <- summary(summaries)
+  }
+  return(results)
+}
+get_prop_clusters('class',datafile1)
+get_prop_clusters('satisfaction',datafile1)
+get_prop_clusters('age_group',datafile1)
+get_prop_clusters('type_of_travel',datafile1)
+get_prop_clusters('gender',datafile1)
+get_prop_clusters('airline_status',datafile1)
+get_prop_clusters('airline_name',datafile1)
+get_prop_clusters('flight_cancelled',datafile1)
+
+routes_1<- as.data.frame(datafile1[which(datafile1$cluster==1),] %>% select(origin_state,destination_state,satisfaction_score,flight_distance,airline_name) %>% group_by(origin_state,destination_state) %>% summarise(count=n(),.groups='drop',avg_satisfaction=mean(satisfaction_score),avg_dist=mean(flight_distance)) %>% arrange(-count))
+head(routes_1,10)
+routes_2<- as.data.frame(datafile1[which(datafile1$cluster==2),] %>% select(origin_state,destination_state,satisfaction_score,flight_distance,airline_name) %>% group_by(origin_state,destination_state) %>% summarise(count=n(),.groups='drop',avg_satisfaction=mean(satisfaction_score),avg_dist=mean(flight_distance)) %>% arrange(-count))
+head(routes_2,10)
+routes_3<- as.data.frame(datafile1[which(datafile1$cluster==3),] %>% select(origin_state,destination_state,satisfaction_score,flight_distance,airline_name) %>% group_by(origin_state,destination_state) %>% summarise(count=n(),.groups='drop',avg_satisfaction=mean(satisfaction_score),avg_dist=mean(flight_distance)) %>% arrange(-count))
+head(routes_3,10)
+
+summary_clusters('shopping_amount_at_airport',datafile1)
+summary_clusters('eating_and_drinking_amounts_at_airport',datafile1)
+summary_clusters('total_spending',datafile1)
+summary_clusters('no_of_flights',datafile1)
+summary_clusters('arrival_delay',datafile1)
+summary_clusters('departure_delay',datafile1)
+summary_clusters('age',datafile1)
+summary_clusters('flight_distance',datafile1)
+
+plot_cluster_proportions <- function(var, data, title = "Proportion of Categories within Clusters") {
+  
+# Use the existing get_prop_clusters function
+prop_results <- get_prop_clusters(var, data)
+
+# Combine proportion data into a single data frame
+df <- do.call(rbind, lapply(names(prop_results), function(cluster) {
+data.frame(
+Cluster = cluster,
+Category = names(prop_results[[cluster]]),
+Proportion = as.numeric(prop_results[[cluster]])
+)
+}))
+
+# Create the faceted plot
+ggplot(df, aes(x = Category, y = Proportion, fill = Category)) +
+geom_bar(stat = "identity") +
+facet_wrap(~ Cluster, ncol = 1) + # Facet by cluster
+labs(
+title = title,
+x = var,
+y = "Proportion"
+) +theme_preset+
+scale_fill_brewer(palette = "Set1")
+}
+plot1<-plot_cluster_proportions('class',datafile1,'Proportion of travel class within clusters')
+plot2<-plot_cluster_proportions('satisfaction',datafile1,'Proportion of satisfaction within clusters')
+plot3<-plot_cluster_proportions('age_group',datafile1,'Proportion of age group within clusters')
+plot4<-plot_cluster_proportions('type_of_travel',datafile1,'Proportion of travel type within clusters')
+plot5<-plot_cluster_proportions('gender',datafile1,'Proportion of gender within clusters')
+plot6<-plot_cluster_proportions('airline_status',datafile1,'Proportion of travel class within clusters')
+plot7<-plot_cluster_proportions('airline_name',datafile1,'Proportion of airline names within clusters')
+plot8<-plot_cluster_proportions('flight_cancelled',datafile1,'Proportion of cancelled flights within clusters')
+grid.arrange(
+  plot1, plot2, plot3,
+  plot4, plot5, plot6,
+  plot7, plot8,
+  ncol = 3
+)
+library(ggplot2)
+library(gridExtra)
+
+# Function to plot density for each continuous variable
+plot_cluster_density <- function(var, data, title) {
+    # Only consider continuous variables for density plotting
+    if (is.numeric(data[[var]])) {
+        # Create a data frame for the density plot
+        cluster_data <- data.frame(
+            Value = data[[var]],
+            Cluster = factor(data$cluster)
+        )
+        
+        # Generate the density plot using ggplot2
+        plot <- ggplot(cluster_data, aes(x = Value, fill = Cluster)) +
+            geom_density(alpha = 0.3) +
+            labs(title = title, x = var, y = "Density") +
+            theme_preset +
+            scale_fill_manual(values = c("red", "blue", "green")) 
+        return(plot)
+    } else {
+    }
+}
+# Generate density plots for continuous variables only
+plot1 <- plot_cluster_density("shopping_amount_at_airport", datafile1, "Density of Shopping Amount at Airport by Cluster")
+plot2 <- plot_cluster_density("eating_and_drinking_amounts_at_airport", datafile1, "Density of Eating and Drinking Amounts at Airport by Cluster")
+plot3 <- plot_cluster_density("total_spending", datafile1, "Density of Total Spending by Cluster")
+plot4 <- plot_cluster_density("arrival_delay", datafile1, "Density of Arrival Delay by Cluster")
+plot5 <- plot_cluster_density("departure_delay", datafile1, "Density of Departure Delay by Cluster")
+plot6 <- plot_cluster_density("age", datafile1, "Density of Age by Cluster")
+plot7 <- plot_cluster_density("flight_distance", datafile1, "Density of Flight Distance by Cluster")
+
+# Arrange the plots into a 3x3 grid
+grid.arrange(plot1, plot2, plot3,plot4, plot5, plot6,plot7, ncol = 3)
+```
+** Insight **
+  The exploratory data analysis of the datasets provided valuable insights into the challenges and opportunities the airline faces in enhancing customer satisfaction and improving its overall marketing strategies. A major issue revealed is the high dissatisfaction rate among Economy Class passengers, particularly those traveling for personal purposes. This finding suggests a gap in either the quality of service provided or the perceived value for customers in this segment. While Business Class travelers consistently report high levels of satisfaction, indicating that premium services are meeting their expectations, the stark contrast with Economy Class underlines an area where focused improvements could have a significant impact. Enhancing comfort, offering loyalty benefits, or introducing additional perks specifically tailored for Economy Class could help bridge this gap and drive satisfaction for a broader audience.
+
+Another critical factor influencing satisfaction is operational efficiency, particularly delays. Dissatisfied customers experience longer delays compared to satisfied ones, with average departure delays of 18.72 minutes versus 12.95 minutes, and arrival delays of 21.83 minutes compared to 15.00 minutes. This pattern highlights the significant role that operational reliability plays in shaping customer perceptions. Improving punctuality could not only enhance satisfaction levels but also reduce the negative impact delays have on the airline’s reputation. Addressing this operational bottleneck should be a key priority, as timely flights are often a fundamental expectation for travelers.
+
+Further analysis reveals that service attributes, such as inflight entertainment, seat comfort, and online boarding, strongly correlate with higher satisfaction levels. These factors represent potential competitive advantages for the airline, as they align closely with what customers value in their travel experience. By emphasizing these features in marketing campaigns and further improving them, the airline can effectively attract new customers while retaining its loyal ones. Additionally, demographic trends highlight an important audience to consider: younger travelers in Economy Class who display a higher likelihood of dissatisfaction. This group represents a valuable opportunity for personalized marketing strategies, such as promotions or targeted offers that align with their preferences and expectations.
+
+Lastly, the consistently high satisfaction levels among Business Class travelers provide a positive benchmark and an opportunity to leverage these strengths in branding and promotional activities. Highlighting the superior experience offered in Business Class could reinforce the airline’s image as a premium service provider while attracting high-value customers. In summary, addressing the operational inefficiencies causing delays, enhancing the Economy Class experience, leveraging premium service quality as a selling point, and personalizing strategies for younger travelers present a comprehensive roadmap for tackling the challenges identified. These strategies are not only aligned with the insights gained from the data but also demonstrate a clear pathway to enhancing customer satisfaction and driving long-term success for the airline.
+
+**Question 4: Discussion of techniques and models used**
+Generally, the two datasets contain id columns with matching values, however, when we looked closer to it, the values from corresponding columns does not match between two datasets, which means the datasets were collected from different entities. Thus, we cannot use merging technique to expand the main dataset, instead, we study the each problem with the most suitable dataset for that specific topic.
+Starting with the main dataset, in order to study spending patterns, we plotted out the histogram for total spending, which is the sum of shopping and eating amounts at airport, while also adding a new column of satisfaction under binary format. Having learned that the distribution for total spending is heavily skewed, we decided to take the log of total spending and remove 0 values rows so that we can apply K-means clustering technique to the main dataset. We included log of total spending, age (as a demographic variable), flight distance (to detect long and short distance flyers) and satisfaction score. In processing the scaled data, we applied Principal Component Analysis reduce the dimensions down to 2 on a perpendicular basis for vectors (the final dimensions are the combinations of component variables) to avoid overfitting. From the heatmap of factors that contribute to the determination of PCA vectors, total spending plays a critical role with a ratio of 0.8 on the PCA2, other variables contributed mostly on PCA1. Next, we conducted hierarchical clustering to find the best number of clusters, and according to elbow method, we selected 3 as the optimal number of clusters, resulting in 4936 customers in cluster 1, 2586 and 2767 for cluster 2 and 3 respectively. In post-hoc analysis, we carried out chi-squared test, Tukey test in conjunction with ANOVA to detect the discrepancies between clusters themselves.
+For the secondary dataset, logit regression would facilitate the requirements for predicting satisfaction based on airline qualities. In cleaning the dataset, we removed null values, transformed satisfaction into score of 1 and 0. In conducting the model equation, we included flight distance as an interaction term to study its effect on how customers find if their flight is of satisfactory quality based on the concept that longer-distance flyers value seat comfort, in-flight food quality, etc. compared to short-distance flights. Predictive regression was also utilized by dividing the dataset into 75% for training and 25% for validation for further analysis of model performance. In feature selection step, we conducted forward and both-direction stepwise iteration process to arrive at a final models with only significant explaining variables. After the model was chosen, we evaluated the model performance on the validation dataset with RMSE, MAE, MAPE indicator, as well as other benchmarks such as AUC, accuracy, precision ratios. In order to have a more intuitive presentation of our result, we also fitted a decision tree model for the dataset, in which way we can observe the key paths and key factors (with higher weights) in determining if a passenger would be satisfied or not. Similarly, we conducted post-hoc analysis for AUC, accuracy, precision to study how precise the model was and how often it misclassified the target variable.
+
+```{r}
+par(mfrow = c(1, 1))
+datafile2$age_group <- as.factor(sapply(datafile2$age, get_age_group))
+datafile2$satisfaction_score <- as.integer(ifelse(datafile2$satisfaction=='satisfied', 1, 0))
+datafile2<- na.omit(datafile2)
+set.seed(1000)
+samples <- sample(seq(1,2),size=nrow(datafile2),replace= TRUE, prob=c(0.75,0.25))
+datafile2_train <- datafile2[samples==1,]
+datafile2_valid <- datafile2[samples==2,]
+#due to high correlation between ease of booking and inflight_wifi_service, we chose inflight_wifi_service since it's more correlated to satisfaction than ease of booking and did the same to arrival/departure delay
+datafile2_train$type_of_travel <- relevel(factor(datafile2_train$type_of_travel), ref = "Business travel")
+datafile2_train$age_group <- relevel(factor(datafile2_train$age_group), ref = "Adult")
+datafile2_train$class <- relevel(factor(datafile2_train$class), ref = "Eco")
+datafile2_train$customer_type <- relevel(factor(datafile2_train$customer_type), ref = "disloyal Customer")
+datafile2_train$gender <- relevel(factor(datafile2_train$gender), ref = "Male")
+full_model <- glm((satisfaction_score)~(factor(customer_type)+flight_distance+inflight_wifi_service+departure_arrival_time_convenient+gate_location+food_and_drink+online_boarding+ seat_comfort+inflight_entertainment +on_board_service +leg_room_service +baggage_handling+checkin_service+ inflight_service +departure_delay_in_minutes+factor(age_group)+factor(class)+cleanliness+ flight_distance*(seat_comfort+leg_room_service+inflight_service+ inflight_wifi_service+inflight_entertainment+food_and_drink))  , data = datafile2_train, family = binomial)
+stepwise_model <- step(full_model, direction = "both", trace = FALSE)
+stepwise_model
+hist(datafile2_train$satisfaction_score-stepwise_model$fitted.values, main='Histogram of Residuals from Logit Regression',cex.main=1.5)
+library(Metrics)
+valid_predicted <-predict(stepwise_model,datafile2_valid,type='response')
+rmse_train <- rmse((datafile2_train$satisfaction_score),stepwise_model$fitted.values)
+rmse_valid <- rmse((datafile2_valid$satisfaction_score),valid_predicted)
+rmse<- c(rmse_train,rmse_valid)
+rmse
+mae_train <- mae(datafile2_train$satisfaction_score,stepwise_model$fitted.values)
+mae_valid <- mae(datafile2_valid$satisfaction_score,valid_predicted)
+mae<- c(mae_train,mae_valid)
+mae
+## Matrix of metrics to compare models
+library(ROCR)
+valid_predicted <- predict(stepwise_model,datafile2_valid,type='response')
+ROC_pred <- prediction(valid_predicted, datafile2_valid$satisfaction_score)
+ROC_perf<- performance(ROC_pred, measure = "tpr", x.measure = "fpr")
+options(repr.plot.width = 14, repr.plot.height = 8)
+plot(ROC_perf, colorize=TRUE, print.cutoffs.at=seq(0,1,by =0.1), text.adj=c(-0.3,1.6), text.cex = 1.2 , main="ROC Curve", xlab="1-Specificity", ylab="Sensitivity")
+auc <- as.numeric(performance(ROC_pred, measure = "auc")@y.values)
+auc
+confusion_matrix <- table(datafile2_valid$satisfaction_score, valid_predicted>0.7)
+confusion_matrix
+tp <- confusion_matrix[2,2]
+fp <- confusion_matrix[1,2]
+fn <- confusion_matrix[2,1]
+tn <-confusion_matrix[1,1]
+accuracy<- (tp+tn)/(tp+tn+fp+fn)
+accuracy
+misclassification<- (fp+fn)/(tp+tn+fp+fn)
+misclassification
+precision<- tp/(tp+fp)
+precision
+specificity<- tp/(tp+fn)
+specificity
+sensitivity<- tn/(tn+fp)
+sensitivity
+###### Decision Tree
+library(rpart)
+library(rpart.plot)
+library(pROC)
+decision_tree <- rpart(
+factor(satisfaction) ~ gender + customer_type + age + type_of_travel + class + flight_distance + inflight_wifi_service + departure_arrival_time_convenient + ease_of_online_booking +gate_location + food_and_drink + online_boarding + seat_comfort + inflight_entertainment + on_board_service + leg_room_service + baggage_handling + checkin_service + inflight_service + cleanliness + departure_delay_in_minutes + arrival_delay_in_minutes + age_group, data = datafile2_train, method = "class",control = rpart.control(cp = 0.005, minsplit = 20, maxdepth = 10))
+rpart.plot(decision_tree, type = 3, extra = 104, under = TRUE, fallen.leaves = TRUE, main = "Decision Tree for Passenger Satisfaction",cex.main=1.5,cex=0.5)
+predictions <- predict(decision_tree, newdata = datafile2_valid, type = "class")
+confusion_matrix_tree <- table(datafile2_valid$satisfaction, predictions)
+confusion_matrix_tree
+tp_tree <- confusion_matrix_tree[2,2] 
+tn_tree <- confusion_matrix_tree[1,1] 
+fp_tree <- confusion_matrix_tree[1,2] 
+fn_tree <- confusion_matrix_tree[2,1] 
+tree_probabilities <- predict(decision_tree, newdata = datafile2_valid, type = "prob")[, 2]
+roc_curve <- roc(datafile2_valid$satisfaction, tree_probabilities, levels = c("neutral or dissatisfied", "satisfied"))
+plot(roc_curve, col = "blue", main = "ROC Curve for Decision Tree Model")
+auc_value <- auc(roc_curve)
+auc_value 
+accuracy_tree <- (tp_tree + tn_tree) / (tp_tree + tn_tree + fp_tree + fn_tree)
+accuracy_tree
+misclassification_tree <- (fp_tree + fn_tree) / (tp_tree + tn_tree + fp_tree + fn_tree)
+misclassification_tree
+precision_tree <- tp_tree / (tp_tree + fp_tree)
+precision_tree
+specificity_tree <- tn_tree / (tn_tree + fp_tree)
+specificity_tree
+sensitivity_tree <- tp_tree / (tp_tree + fn_tree)
+sensitivity_tree
+```
+**Question 5: Evaluation of the models** 
+# Main Dataset
+Regarding the first dataset, the Elbow method which integrated within-cluster sum of squares suggested the optimal number of clusters to be 3. The clustering results demonstrated a explanatory power of approximately 59% of total variance in independent variables. From the plot of clusters on two dimensions of PCAs, we observed a fairly good clustering of the variables. In conducting post-hoc analysis, we ran Chi-Square tests for categorical variables and Tukey for numerical variables and will depend on number of flights to interpret loyalty since airline status would be considered less relevant.
+Overall, the results between clusters based on Tukey tests are:
+- Total spending: significantly different among 3 clusters
+- Food and drink spending: significantly different among 3 clusters
+- Shopping amount: significantly different among 3 clusters
+- Satisfaction score: significantly different among 3 clusters
+- Loyalty (based on number of flights): significantly different among 3 clusters
+- Departure delay: significantly different among clusters 3 & 1, 3 & 2 at 5% level
+- Departure delay: significantly different among clusters 3 & 1, 3 & 2 at 5% level
+- Age: significantly different among 3 clusters 
+Based on Chi-squared tests, since Tukey cannot be applied to categorical variables, we can only inspect overall association between clusters and specific variables (no information for among-cluster differences)
+- Flights cancelled: significant difference between clusters
+- Flying Class: significant difference between clusters
+- Type of travel: significant difference between clusters
+- Gender: significant difference between clusters
+Based on the results above and the summaries of cluster statistics, we arrived at three clusters with charactersitics as below:
+| Feature                  | Cluster 1: Middle-aged Business Travelers with High Spending and High Satisfaction | Cluster 2: Young Budget Travelers | Cluster 3: Senior Personal Flyers with Low Satisfaction |
+|--------------------------|-------------------------------------------------------|-----------------------------------------------|--------------------------------------------------|
+| **Total Spending**       | Mean: $127.6, Median: $105.0                         | Mean: $35.59, Median: $30.00                  | Mean: $104.9, Median: $90.00                     |
+| **Shopping Spending**    | Mean: $40.3, Median: $10.0                           | Mean: $4.77, Median: $0.00                    | Mean: $25.88, Median: $0.00                      |
+| **Eating/Drinking Spending** | Mean: $87.29, Median: $75.00                     | Mean: $30.81, Median: $30.00                  | Mean: $79.07, Median: $65.00                     |
+| **Age Group**            | Median: 41 years, Balanced (Adults: 41%)             | Median: 36 years, Younger Demographics (Young Adults: 44.6%) | Median: 67 years, Seniors (Seniors: 56.9%)       |
+| **Flight Distance**      | Mean: 464.4 miles, Median: 416.0 miles               | Mean: 473.2 miles, Median: 416.0 miles        | Mean: 471.0 miles, Median: 419.0 miles           |
+| **Satisfaction**         | High (72.2% satisfied)                               | Moderate (51.0% satisfied)                    | Very Low (6.9% satisfied)                        |
+| **Arrival Delays**       | Mean: 18.14 minutes, Median: 0 minutes               | Mean: 18.06 minutes, Median: 0 minutes        | Mean: 21.68 minutes, Median: 1 minute            |
+| **Departure Delays**     | Mean: 15.69 minutes, Median: 0 minutes               | Mean: 15.34 minutes, Median: 0 minutes        | Mean: 18.51 minutes, Median: 0 minutes           |
+| **Type of Travel**       | Business: 77.2%, Personal: 14.6%, Mileage: 8.1%      | Business: 67.1%, Personal: 22.7%, Mileage: 10.2% | Business: 26.6%, Personal: 68.5%, Mileage: 4.8% |
+| **Class of Service**     | Economy: 80.6%, Business: 9.6%, Eco Plus: 9.8%       | Economy: 81.4%, Business: 7.8%, Eco Plus: 10.8% | Economy: 81.2%, Business: 7.4%, Eco Plus: 11.3% |
+| **Gender**               | Female: 55.6%, Male: 44.4%                           | Female: 52.5%, Male: 47.5%                    | Female: 59.6%, Male: 40.4%                       |
+| **Airline Status**       | Silver: 24.4%, Gold: 9.8%, Platinum: 3.7%, Blue: 62.1% | Silver: 11.7%, Gold: 7.3%, Platinum: 2.6%, Blue: 78.3% | Silver: 11.7%, Gold: 8.0%, Platinum: 2.9%, Blue: 77.4% |
+
+Overall, cluster 1 had a pretty good satisfaction percentage of roughly 76% while the pattern was mixed in cluster 2 with 51% of passenger being satisfied and cluster 3 statistics suggested negative passenger experience with only 6.9% of customers finding the flights to be satisfactory. Regarding other flying statistics, clusters 1 and 2 had a higher percentage of Business class passengers while Eco & Eco Plus reached their peak proportion in cluster 3; correspondingly, most people traveled for business purpose on clusters 1 and 2 while cluster 3 comprised mainly of personal-purpose passengers. Loyal passengers were most likely to be found in cluster 3 with 30.8 in average previous flights, followed by cluster 2 and 1 with 22.45 and 12.45 flights respectively. The routes taken were fairly similar between each cluster, however, their associated sastifaction scores differed largely, with lower satisfaction overall in cluster 3 with a special case of Illinois-Texas flight with zero satisfaction from 41 flyers from cluster 3; while passengers enjoyed Texas-Texas route on cluster 1 with 83% likelihood of satisfaction. Passengers from cluster 3 were more likely to experience delays (both arrival and departure), which could help in explaining their negative perception of the airlines' services. Demographically speaking, cluster 1 was dominated by young adults and adults (working-age customers), while most teenagers from the customer base belonged to cluster 2, finally, seniors accounted for the majority of cluster 3. Gender-wise, there were more females than males overall, but the imbalance was most notable in cluster 3 with 59% passengers being females. 
+Regarding spending behaviors, and specifically shopping, working-age dominated cluster 1 customers tended to spend more on average with a mean shopping amount of 40.3 dollars, followed by cluster 3 with both clusters having extreme amounts of very values ($580 for cluster 1 and $420 for cluster 3). Intuitively, teenage-dominated cluster 2 spend an average of 4.77 dollars with a maximum value observed of $120. Out of 3 top shopping spenders in each cluster, we noticed that two of them from cluster 2 and 3 were not satisfied with the service. Regarding food and beverage, the percentage gaps were not as wide as they were in shopping although it shared the same pattern with shopping behavior among clusters, and surprisingly, opposite to general concept that people shop at airports for luxuries, flyers spend more on food and drinks on average, which suggested that the shopping was mainly of small-value items (souvenirs, tokens, etc.).
+For the summary above, we arrived at the most suitable names for the 3 clusters:
++ Cluster 1: Optimistic working age business flyers with high spending
++ Cluster 2: Young budget-conscious flyers 
++ Cluster 3: Senior personal flyers with low satisfaction
+
+#Second dataset 
+With respect to predictive logit model, we conducted it using stepwise feature selection to see what factors are influencing customer satisfaction and help predict the likelihood of customer satisfaction. First, our histogram of residuals being centered around zero indicates that we have unbiased residuals, which showcased that our model had captured the variances of target variable and what remained was noise. With that, based on our results, here are some notable insights: 
+Flight Distance: coefficient of -0.001131 This suggests a negative effect on the log-odds of satisfaction for longer flights. For instance, a 200-mile increase in flight distance would decrease the log-odds of satisfaction by 0.226. However, certain interaction terms (e.g., flight distance with seat comfort and legroom) show that longer flights increase the importance of these factors, providing opportunities to offset the negative impact.
+Inflight Wi-Fi Service: 0.6679 Improving Wi-Fi quality by one unit increases the log-odds of satisfaction by 14.6%. Notably, the interaction with flight distance (-0.000196) indicates that while Wi-Fi remains critical, its marginal value might slightly diminish on longer flights.
+Seat Comfort: coefficient of -0.1252, slightly negative, suggesting its standalone impact is less straightforward. However, its interaction with flight distance (0.000166) shows its value increases significantly on longer flights, emphasizing its importance for long-haul routes.
+Customer Type:Loyal Customers coefficient of 1.048 Loyal customers are far more likely to report satisfaction compared to non-loyal customers.
+Age Group: children (-0.954), seniors (-1.085), and teenagers (-0.475): These groups report lower satisfaction compared to the reference group (likely adults). Meanwhile, young adults has a coefficient of -0.077 - slightly negative but nearly neutral, indicating satisfaction patterns closer to the reference group.
+Type of Travel: personal travel (-1.873): Passengers traveling for personal reasons report significantly lower satisfaction compared to the reference group (business class)
+Class: Eco Plus has a coefficient of 0.2624, indicating a moderate positive effect on satisfaction compared to reference class (Eco).
+Cleanliness: coefficient of 0.1733, suggesting cleanliness contributes positively to satisfaction, underscoring its importance across all flight types.
+Other Factors:
+- Services like online boarding (0.500), baggage handling (0.0447), and check-in service (0.2354) positively impact satisfaction.
+- Departure and arrival time convenience (-0.2847) and food and drink (-0.1613), in-flight service (-0.154) show slight negative coefficients, possibly indicating that higher scores in these areas correlate with dissatisfaction when other factors are inadequate.
+Other interaction terms with flight distance: seat comfort, legroom service, food and drink, in-flight entertainment, inflight service ratings are magnified by longer distance. 
+Lastly, in evaluating the logit model, we predicted based on validation set and obtained MRSE, MAE (MAPE not applicable) that were comparable between the two sets, indicating its predictive power. In order to determine the cut-off point for prediction, we plotted an area-under-the-curve plot to learn the trade off between accuracy and variance, from which we observed a reasonable level of 0.7 to be the cut-off point. The model performed well overall, with an accuracy of 84.5% and a misclassification rate of 15.4%. Precision is strong at 93.8%, indicating that most predicted positive cases are correct. Sensitivity is excellent at 96.4%, meaning the model effectively identifies true negatives. Specificity is lower at 69.2%, suggesting room for improvement in detecting true positives.
+
+For a better understanding of interaction and process of determining customer satisfaction, we decided to compliment our original model with a decision tree. The passenger satisfaction decision tree identifies essential factors influencing overall satisfaction. Online boarding stands out as the most critical aspect; passengers who rate it 4 or higher are significantly more likely to express satisfaction, especially when assocaited with strong inflight Wi-Fi and service. Inflight Wi-Fi service is crucial, with high ratings (4 or above) closely linked to satisfaction, especially among business travelers. Type of travel further influences satisfaction levels, as business travelers typically report greater satisfaction, whereas personal travelers need improved ratings in areas like inflight entertainment and seat comfort to mitigate dissatisfaction. Class of travel also affects satisfaction, with Business Class passengers reporting higher levels than Eco/Eco Plus travelers. Customer loyalty plays a crucial role, as loyal customers often report higher satisfaction even with lower ratings in some categories, while disloyal customers need higher overall ratings to feel the same level of satisfaction. Lastly, factors such as seat comfort, inflight entertainment, and check-in service also contribute positively to satisfaction when rated highly; conversely, low ratings in these areas can lead to dissatisfaction. This analysis emphasizes the need to enhance key service attributes to improve passenger experiences, particularly for personal travelers and economy-class passengers. Overall, this method can tackle the vague interpretation of logit regression and provides a reasoning basis for identifying which area to improve, which also has higher performance (notably accuary of 92% and misclassification ratio of only 7.7%), as well as an excellent ratio of area under the curve (AUC) of 95.68%.
+
+
+
+**Question 6**
+#Recommendations for Higher Revenue and Customized & Segmented Marketing Campaigns
+
+Cluster 1: 
+To capitalize on the spending potential of this segment, which includes middle-aged business travelers, the following initiatives are recommended:
+
+Introduce premium services such as exclusive lounges, priority boarding, and personalized in-flight experiences for an additional fee, catering to their business-oriented needs.
+Enhance amenities like high-speed Wi-Fi and comfortable workspaces to appeal to those working during flights.
+Highlight fast-track services in marketing campaigns, emphasizing convenience for their busy schedules.
+Develop campaigns around upsell opportunities, including premium dining, shopping perks, and loyalty membership benefits.
+Offer exclusive shopping and dining discounts at airports and onboard to encourage additional spending.
+Create personalized marketing materials that align with their professional and middle-age interests, delivered via email or business-oriented platforms.
+
+Cluster 2: 
+This group includes younger, tech-savvy passengers with lower spending tendencies. The focus should be on cost-effective solutions and digital engagement:
+
+Promote cost-effective bundles for luggage, seat upgrades, and meal options, aligning with their budget-conscious nature.
+Enhance the app and website experience, making booking and check-ins seamless and accessible via mobile.
+Introduce targeted promotions through platforms like Instagram, TikTok, and Snapchat to connect with younger demographics.
+Roll out loyalty and mileage rewards to encourage retention while minimizing spending-boost campaigns due to their limited expenditure tendencies.
+Tailor campaigns using young-adult-centric messaging, focusing on affordability and convenience.
+
+Cluster 3: 
+For this group, the emphasis should be on providing comfort, assistance, and moderate engagement:
+
+Implement senior-friendly services, such as wellness kits, dietary accommodations, and personalized assistance during check-in and boarding.
+Address their primary dissatisfaction factors by reducing delays and improving customer service quality.
+Provide ergonomic seating options to enhance comfort, especially for long-haul flights.
+Run occasional marketing campaigns highlighting moderate shopping opportunities and services tailored to their needs, ensuring clarity and ease of access.
+
+
+# Recommendation based on Logistic Regression 
+We should focus on crucial, highly weighted factors based on the decision tree:
+
+Wi-Fi Technology: Invest in faster and more reliable Wi-Fi services with tiered pricing plans to cater to both budget-conscious and premium customers. Highlight these improvements in marketing campaigns to enhance appeal.
+Seat Comfort: Redesign seating configurations to offer better ergonomics and additional legroom options for premium seats. Promote these enhancements in customer communication.
+Inflight Meals: Introduce dietary-specific options, including vegetarian, vegan, and gluten-free meals, and collaborate with well-known chefs to create premium dining experiences.
+Senior-Friendly Services: Ensure personalized assistance, such as ergonomic seating, clear communication about delays, and dedicated staff for check-in and boarding.
+Gate Locations and Online Boarding: Streamline gate assignments closer to key facilities at airports and optimize the online boarding process for speed and ease of use.
+Personalized Experiences: Recognize frequent travelers with incentives such as complimentary seat upgrades, loyalty rewards, and exclusive offers tailored to their preferences.
+Targeted Communication for Delays: Enhance digital channels for real-time updates and proactive assistance, reducing frustration caused by delays.
+
+
+
+Submit your dataset(s) in csv format, along with this rmd file and a word or pdf knit file.
+
+
+
+
